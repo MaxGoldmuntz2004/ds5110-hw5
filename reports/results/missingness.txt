@@ -1,0 +1,19 @@
+=== PART 5: MISSINGNESS MECHANISM ===
+
+--- Lot Frontage: 490 / 2930 missing (16.72%) ---
+      column        type                                         mean_present                                        mean_missing median_present median_missing
+   SalePrice     numeric                                            180099.74                                           184263.44       157500.0       173000.0
+    Lot Area     numeric                                              9709.52                                            12330.97         9248.5        10397.5
+  Year Built     numeric                                              1970.52                                             1975.51         1972.0         1976.5
+ Gr Liv Area     numeric                                              1488.98                                             1553.01         1433.5         1488.0
+  Lot Config categorical {'Inside': 0.765, 'Corner': 0.167, 'CulDSac': 0.038} {'Inside': 0.559, 'Corner': 0.212, 'CulDSac': 0.18}                              
+Neighborhood categorical  {'NAmes': 0.154, 'OldTown': 0.094, 'CollgCr': 0.09}  {'NAmes': 0.139, 'Gilbert': 0.11, 'Sawyer': 0.108}                              
+
+--- Mas Vnr Area: 23 / 2930 missing (0.78%) ---
+      column        type                                         mean_present                                           mean_missing median_present median_missing
+   SalePrice     numeric                                            180380.27                                              233348.74       160000.0       207500.0
+    Lot Area     numeric                                             10141.31                                               10983.87         9430.0         9965.0
+  Year Built     numeric                                              1971.11                                                2002.65         1973.0         2006.0
+ Gr Liv Area     numeric                                              1498.41                                                1661.57         1440.0         1564.0
+  Lot Config categorical {'Inside': 0.731, 'Corner': 0.174, 'CulDSac': 0.061}   {'Inside': 0.652, 'Corner': 0.217, 'CulDSac': 0.087}                              
+Neighborhood categorical {'NAmes': 0.152, 'CollgCr': 0.091, 'OldTown': 0.082} {'Somerst': 0.435, 'Gilbert': 0.217, 'CollgCr': 0.087}                              

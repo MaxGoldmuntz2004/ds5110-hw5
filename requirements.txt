@@ -1,6 +1,4 @@
-# Pin exact versions. Replace with the output of: pip freeze | grep -E "pandas|numpy|scikit-learn|matplotlib|pandera"
-numpy
-pandas
-scikit-learn
-matplotlib
-# pandera   # optional, for Part 2
+matplotlib==3.11.2
+numpy==2.5.3
+pandas==3.0.5
+scikit-learn==1.7.1

@@ -7,33 +7,122 @@ class ValidationError(Exception):
     pass
 
 
+EXPECTED_NUMERIC = {
+    "Order", "PID", "MS SubClass", "Lot Frontage", "Lot Area", "Overall Qual",
+    "Overall Cond", "Year Built", "Year Remod/Add", "Mas Vnr Area",
+    "BsmtFin SF 1", "BsmtFin SF 2", "Bsmt Unf SF", "Total Bsmt SF",
+    "1st Flr SF", "2nd Flr SF", "Low Qual Fin SF", "Gr Liv Area",
+    "Bsmt Full Bath", "Bsmt Half Bath", "Full Bath", "Half Bath",
+    "Bedroom AbvGr", "Kitchen AbvGr", "TotRms AbvGrd", "Fireplaces",
+    "Garage Yr Blt", "Garage Cars", "Garage Area", "Wood Deck SF",
+    "Open Porch SF", "Enclosed Porch", "3Ssn Porch", "Screen Porch",
+    "Pool Area", "Misc Val", "Mo Sold", "Yr Sold", "SalePrice",
+}
+
+EXPECTED_TEXT = {
+    "MS Zoning", "Street", "Alley", "Lot Shape", "Land Contour", "Utilities",
+    "Lot Config", "Land Slope", "Neighborhood", "Condition 1", "Condition 2",
+    "Bldg Type", "House Style", "Roof Style", "Roof Matl", "Exterior 1st",
+    "Exterior 2nd", "Mas Vnr Type", "Exter Qual", "Exter Cond", "Foundation",
+    "Bsmt Qual", "Bsmt Cond", "Bsmt Exposure", "BsmtFin Type 1",
+    "BsmtFin Type 2", "Heating", "Heating QC", "Central Air", "Electrical",
+    "Kitchen Qual", "Functional", "Fireplace Qu", "Garage Type",
+    "Garage Finish", "Garage Qual", "Garage Cond", "Paved Drive", "Pool QC",
+    "Fence", "Misc Feature", "Sale Type", "Sale Condition",
+}
+
+EXPECTED_COLS = EXPECTED_NUMERIC | EXPECTED_TEXT
+
 # Each rule needs a source. Put it in the comment.
 RANGES = {
-    # "Year Built": (1870, 2010),   # source: ...
+    "Overall Qual": (1, 10),         # source: data dictionary, Overall Qual (1-10 scale)
+    "Overall Cond": (1, 10),         # source: data dictionary, Overall Cond (1-10 scale)
+    "Yr Sold": (2006, 2010),         # source: study period (De Cock, 2011: 2006-2010)
+    "Mo Sold": (1, 12),              # source: physical/calendar limit (months 1-12)
+    "Year Built": (1870, 2010),      # source: study period upper bound (2010) & historic housing
+    "Garage Yr Blt": (1890, 2010),   # source: study period upper bound (cannot be built after 2010)
+    "Lot Area": (1, 500000),         # source: physical limit (positive lot area in sq ft)
+    "Gr Liv Area": (1, 20000),       # source: physical limit (positive living area in sq ft)
+    "SalePrice": (1, 5000000),       # source: physical limit (positive sale price in USD)
+    "Lot Frontage": (1, 500),        # source: physical limit (positive street frontage in feet)
 }
 ALLOWED = {
-    # "Street": {"Grvl", "Pave"},   # source: data dictionary, Street (Nominal)
+    "Street": {"Grvl", "Pave"},  # source: data dictionary, Street (Nominal)
+    "Central Air": {"N", "Y"},   # source: data dictionary, Central Air (Nominal)
+    "MS Zoning": {"A", "C", "FV", "I", "RH", "RL", "RP", "RM"},  # source: data dictionary, MS Zoning
+    "Bldg Type": {"1Fam", "2FmCon", "Duplx", "TwnhsE", "TwnhsI"},  # source: data dictionary, Bldg Type
+    "Sale Condition": {"Normal", "Abnorml", "AdjLand", "Alloca", "Family", "Partial"},  # source: data dictionary
 }
 
 
 def check_schema(df: pd.DataFrame) -> list[str]:
     """Return a list of schema failures: missing or extra columns, wrong dtype families."""
-    raise NotImplementedError
+    errors = []
+    actual_cols = set(df.columns)
+    missing = sorted(EXPECTED_COLS - actual_cols)
+    extra = sorted(actual_cols - EXPECTED_COLS)
+    if missing:
+        errors.append(f"Schema: missing columns: {missing}")
+    if extra:
+        errors.append(f"Schema: unexpected extra columns: {extra}")
+
+    for col in sorted(EXPECTED_NUMERIC & actual_cols):
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            errors.append(f"Schema: '{col}' expected numeric dtype, got {df[col].dtype}")
+    for col in sorted(EXPECTED_TEXT & actual_cols):
+        if not (pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_string_dtype(df[col])):
+            errors.append(f"Schema: '{col}' expected text dtype, got {df[col].dtype}")
+    return errors
 
 
 def check_ranges(df: pd.DataFrame) -> list[str]:
     """Return one message per column with values outside its range. NaN is not judged here."""
-    raise NotImplementedError
+    errors = []
+    for col, (lo, hi) in RANGES.items():
+        if col not in df.columns:
+            continue
+        s = pd.to_numeric(df[col], errors="coerce").dropna()
+        bad = s[(s < lo) | (s > hi)]
+        if len(bad) > 0:
+            errors.append(
+                f"Range: '{col}' has {len(bad)} value(s) outside [{lo}, {hi}] "
+                f"(min={bad.min()}, max={bad.max()})"
+            )
+    return errors
 
 
 def check_allowed(df: pd.DataFrame) -> list[str]:
     """Return one message per categorical column with values not in the dictionary."""
-    raise NotImplementedError
+    errors = []
+    for col, allowed_vals in ALLOWED.items():
+        if col not in df.columns:
+            continue
+        s = df[col].dropna()
+        bad_mask = ~s.isin(allowed_vals)
+        if bad_mask.any():
+            bad_counts = s[bad_mask].value_counts().to_dict()
+            errors.append(
+                f"Allowed: '{col}' has {int(bad_mask.sum())} value(s) not in dictionary: {bad_counts}"
+            )
+    return errors
 
 
 def check_cross_column(df: pd.DataFrame) -> list[str]:
     """Return failures of rules that involve two or more columns."""
-    raise NotImplementedError
+    errors = []
+    if {"Year Remod/Add", "Year Built"}.issubset(df.columns):
+        bad = df[df["Year Remod/Add"] < df["Year Built"]]
+        if len(bad) > 0:
+            errors.append(
+                f"Cross-column: {len(bad)} row(s) have Year Remod/Add < Year Built"
+            )
+    if {"Year Built", "Yr Sold"}.issubset(df.columns):
+        bad = df[df["Year Built"] > df["Yr Sold"]]
+        if len(bad) > 0:
+            errors.append(
+                f"Cross-column: {len(bad)} row(s) have Year Built > Yr Sold"
+            )
+    return errors
 
 
 def validate(df: pd.DataFrame) -> pd.DataFrame:

@@ -1,0 +1,5 @@
+=== PART 7: LEAKAGE-SAFE EVALUATION ===
+Variant A (target quintile, full table): 0.159467
+Variant B (group median, before CV):     0.159523
+Variant C (group median, in Pipeline):   0.159540
+Difference (C - B):                      +0.000017

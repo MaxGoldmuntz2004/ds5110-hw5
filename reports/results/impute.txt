@@ -1,0 +1,4 @@
+=== PART 6: IMPUTATION COST TABLE ===
+                     std_before  std_after  corr_LotArea_before  corr_LotArea_after
+Simple_Median           23.3653    21.3264               0.4913              0.3628
+Neighborhood_Median     23.3653    21.7185               0.4913              0.3891
